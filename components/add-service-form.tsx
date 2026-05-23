@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { MASTER_PELAYANAN_SAMPLE, formatCurrency as formatIDR } from "@/lib/master-data"
 
 interface ServiceItem {
   id: string
@@ -29,17 +30,6 @@ interface FormData {
   metodePembayaran: string
 }
 
-// Mock services data
-const mockServices = [
-  { id: "1", name: "Pemeriksaan Umum", price: 50000 },
-  { id: "2", name: "Konsultasi Spesialis", price: 150000 },
-  { id: "3", name: "Laboratorium Darah", price: 75000 },
-  { id: "4", name: "Vaksinasi", price: 100000 },
-  { id: "5", name: "Resep Obat", price: 25000 },
-  { id: "6", name: "Pemeriksaan Gigi", price: 80000 },
-  { id: "7", name: "Rontgen", price: 120000 },
-  { id: "8", name: "USG", price: 200000 },
-]
 
 interface AddServiceFormProps {
   onBack: () => void
@@ -65,30 +55,26 @@ export function AddServiceForm({ onBack }: AddServiceFormProps) {
   const [serviceSearch, setServiceSearch] = useState("")
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount)
+    return formatIDR(amount)
   }
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const filteredServices = mockServices.filter((service) =>
-    service.name.toLowerCase().includes(serviceSearch.toLowerCase())
+  const filteredServices = MASTER_PELAYANAN_SAMPLE.filter((service) =>
+    service.jenis_pelayanan.toLowerCase().includes(serviceSearch.toLowerCase())
   )
 
   const handleAddService = () => {
-    const service = mockServices.find((s) => s.id === selectedService)
+    const service = MASTER_PELAYANAN_SAMPLE.find((s) => s.id === selectedService)
     if (!service) return
 
-    const subtotal = service.price * qtyKilometer
+    const subtotal = service.tarif * qtyKilometer
     const newItem: ServiceItem = {
       id: Date.now().toString(),
-      jenisPelayanan: service.name,
-      totalTarif: service.price,
+      jenisPelayanan: service.jenis_pelayanan,
+      totalTarif: service.tarif,
       qtyKilometer,
       subtotal,
     }
@@ -375,7 +361,7 @@ export function AddServiceForm({ onBack }: AddServiceFormProps) {
                   <option value="">Pilih Jenis Pelayanan</option>
                   {filteredServices.map((service) => (
                     <option key={service.id} value={service.id}>
-                      {service.name} - {formatCurrency(service.price)}
+                      {service.jenis_pelayanan} - {formatCurrency(service.tarif)}
                     </option>
                   ))}
                 </Select>
@@ -402,7 +388,7 @@ export function AddServiceForm({ onBack }: AddServiceFormProps) {
                   <span className="text-sm font-medium">Total Tarif:</span>
                   <span className="font-semibold text-blue-600">
                     {formatCurrency(
-                      (mockServices.find((s) => s.id === selectedService)?.price || 0) *
+                      (MASTER_PELAYANAN_SAMPLE.find((s) => s.id === selectedService)?.tarif || 0) *
                         qtyKilometer
                     )}
                   </span>
