@@ -27,7 +27,6 @@ const menuItems: MenuItem[] = [
     icon: Wallet,
     subItems: [
       { label: "Rekapitulasi Pelayanan", view: "service-list" },
-      { label: "Ringkasan", view: "ringkasan" },
     ],
   },
 ]
