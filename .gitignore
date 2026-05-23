@@ -37,3 +37,5 @@ next-env.d.ts
 
 # claude code memory
 .claude/
+
+/lib/generated/prisma

@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MasterPelayanan {
+  id               String            @id @default(uuid())
+  kategori         String
+  jenisPelayanan   String
+  tarif            Decimal           @db.Decimal(12, 2)
+  satuan           String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  detailPelayanan  DetailPelayanan[]
+
+  @@map("master_pelayanan")
+}
+
+model RekapPelayanan {
+  id                    String            @id @default(uuid())
+  noKwitansi            String            @unique
+  tanggal               DateTime
+  nama                  String
+  alamat                String
+  jenisKelamin          String
+  usia                  Int
+  nomorRm               String
+  sumberPendanaan       String
+  metodePembayaran      String
+  totalTarifKeseluruhan Decimal           @db.Decimal(12, 2)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  detailPelayanan       DetailPelayanan[]
+
+  @@map("rekap_pelayanan")
+}
+
+model DetailPelayanan {
+  id                      String           @id @default(uuid())
+  rekapPelayananId        String
+  masterPelayananId       String
+  jenisPelayananSnapshot  String
+  tarifDasar              Decimal          @db.Decimal(12, 2)
+  qtyKilometer            Decimal          @db.Decimal(10, 2)
+  subtotal                Decimal          @db.Decimal(12, 2)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  rekapPelayanan          RekapPelayanan   @relation(fields: [rekapPelayananId], references: [id], onDelete: Cascade)
+  masterPelayanan         MasterPelayanan  @relation(fields: [masterPelayananId], references: [id])
+
+  @@map("detail_pelayanan")
+}
