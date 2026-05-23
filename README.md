@@ -5,6 +5,13 @@ Sistem informasi rekapitulasi pelayanan untuk Puskesmas yang dibangun dengan Nex
 ## Fitur Utama
 
 ### 1. Dashboard dan Navigasi
+- **Dashboard View dengan Analitik**
+  - KPI Cards: Total Pendapatan, Total Kunjungan Pasien, Layanan Terlaris
+  - Tren Pendapatan Harian (Area Chart dengan gradient)
+  - Distribusi Jenis Pelayanan (Donut Chart)
+  - Filter periode: Hari Ini, Minggu Ini, Bulan Ini, Kustom Tanggal
+  - Tooltips interaktif pada chart
+  - Indikator trend positif/negatif
 - Sidebar navigasi dengan menu dropdown
 - Desain responsif dan modern
 - Indikator menu aktif
@@ -32,6 +39,7 @@ Sistem informasi rekapitulasi pelayanan untuk Puskesmas yang dibangun dengan Nex
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling dan design system
 - **Lucide React** - Icon library
+- **Recharts 3.8.1** - Data visualization charts
 - **Class Variance Authority** - Component variant management
 
 ## Struktur Project
@@ -53,6 +61,7 @@ cashier-pkm/
 │   │   ├── table.tsx
 │   │   └── badge.tsx
 │   ├── sidebar.tsx         # Sidebar navigation component
+│   ├── dashboard.tsx       # Dashboard with charts and KPI cards
 │   ├── service-recap-list-view.tsx  # List view component
 │   └── add-service-form.tsx         # Form tambah component
 ├── lib/
@@ -90,9 +99,28 @@ npm start
 
 ## Komponen dan Fitur
 
-### 1. Sidebar Navigation
+### 1. Dashboard (Main View)
+- **KPI Cards**
+  - Total Pendapatan (Bulan Ini) dengan trend indicator
+  - Total Kunjungan Pasien dengan trend indicator
+  - Layanan Terlaris dengan transaction count
+- **Charts & Analytics**
+  - Tren Pendapatan Harian (Area Chart)
+    - X-Axis: Days of month
+    - Y-Axis: Revenue in IDR (500k, 1M, 1.5M format)
+    - Gradient fill dengan primary blue theme
+    - Interactive tooltips showing exact amounts
+  - Distribusi Jenis Pelayanan (Donut Chart)
+    - Service type proportions with color coding
+    - Interactive legends
+    - Tooltips showing count and percentage
+- **Interactive Filter**
+  - Dropdown: Hari Ini, Minggu Ini, Bulan Ini, Kustom Tanggal
+
+### 2. Sidebar Navigation
 - Logo dan profile icon
 - Menu: Dashboard, Master Data, Keuangan (dengan dropdown)
+- Active state highlighting
 - State management untuk dropdown expand/collapse
 
 ### 2. Service Recap List View
@@ -110,17 +138,19 @@ npm start
 ## State Management
 
 Aplikasi menggunakan React `useState` hooks untuk:
-- View switching (list ↔ form)
+- View switching (dashboard ↔ list ↔ form)
+- Dashboard filter period management
 - Form data management
 - Service items array management
 - Modal open/close state
-- Dropdown menu states
+- Sidebar dropdown and navigation states
 
 ## Styling
 
 ### Color Scheme
 - Primary: Blue (`bg-blue-600`, `text-blue-700`)
 - Secondary: Slate/Gray backgrounds
+- Chart colors: Blue, Cyan, Amber, Emerald, Slate, Purple
 - Accent colors: Cyan, Green untuk action buttons
 - Amber/Orange untuk service addition button
 
@@ -133,6 +163,9 @@ Aplikasi menggunakan React `useState` hooks untuk:
 ## Data Mock
 
 Untuk demonstrasi, aplikasi menggunakan mock data:
+- `dailyRevenueData` - Daily revenue untuk chart (14 days)
+- `serviceDistributionData` - Service type distribution dengan colors
+- `kpiData` - KPI metrics dengan trend indicators
 - `mockData` - Sample rekapitulasi pelayanan records
 - `mockServices` - Sample jenis pelayanan dengan harga
 

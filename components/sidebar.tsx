@@ -7,36 +7,47 @@ import { cn } from "@/lib/utils"
 interface MenuItem {
   label: string
   icon: React.ElementType
-  href?: string
-  subItems?: { label: string; href: string; active: boolean }[]
+  view?: string
+  subItems?: { label: string; view: string }[]
 }
 
 const menuItems: MenuItem[] = [
   {
     label: "Dashboard",
     icon: LayoutDashboard,
-    href: "/",
+    view: "dashboard",
   },
   {
     label: "Master Data",
     icon: Database,
-    href: "/master-data",
+    view: "master-data",
   },
   {
     label: "Keuangan",
     icon: Wallet,
     subItems: [
-      { label: "Rekapitulasi Pelayanan", href: "/rekapitulasi-pelayanan", active: true },
-      { label: "Ringkasan", href: "/ringkasan", active: false },
+      { label: "Rekapitulasi Pelayanan", view: "service-list" },
+      { label: "Ringkasan", view: "ringkasan" },
     ],
   },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: (view: string) => void
+  currentView?: string
+}
+
+export function Sidebar({ onNavigate, currentView }: SidebarProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>("Keuangan")
 
   const toggleDropdown = (label: string) => {
     setOpenDropdown(openDropdown === label ? null : label)
+  }
+
+  const handleNavClick = (view: string) => {
+    if (onNavigate) {
+      onNavigate(view)
+    }
   }
 
   return (
@@ -61,7 +72,7 @@ export function Sidebar() {
             const isOpen = openDropdown === item.label
 
             return (
-              <li key={item.label}>
+                      <li key={item.label}>
                 {hasSubItems ? (
                   <div>
                     <button
@@ -83,30 +94,33 @@ export function Sidebar() {
                       <ul className="ml-6 mt-1 space-y-1">
                         {item.subItems?.map((subItem) => (
                           <li key={subItem.label}>
-                            <a
-                              href={subItem.href}
+                            <button
+                              onClick={() => handleNavClick(subItem.view)}
                               className={cn(
-                                "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                                subItem.active
+                                "block w-full text-left rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                                currentView === subItem.view
                                   ? "bg-blue-50 text-blue-700"
                                   : "text-slate-600 hover:bg-slate-50"
                               )}
                             >
                               {subItem.label}
-                            </a>
+                            </button>
                           </li>
                         ))}
                       </ul>
                     )}
                   </div>
                 ) : (
-                  <a
-                    href={item.href}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                  <button
+                    onClick={() => item.view && handleNavClick(item.view)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100",
+                      currentView === item.view && "bg-blue-50 text-blue-700"
+                    )}
                   >
                     <Icon className="h-4 w-4" />
                     <span>{item.label}</span>
-                  </a>
+                  </button>
                 )}
               </li>
             )}
