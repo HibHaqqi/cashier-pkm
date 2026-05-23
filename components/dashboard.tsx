@@ -4,6 +4,8 @@ import { useState } from "react"
 import { TrendingUp, TrendingDown, DollarSign, Users, Activity, Calendar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import {
   AreaChart,
   Area,
@@ -159,6 +161,8 @@ function KPICard({ title, value, trend, icon: Icon, positive, subtitle }: KPICar
 
 export function Dashboard() {
   const [filterPeriod, setFilterPeriod] = useState("Bulan Ini")
+  const [customStartDate, setCustomStartDate] = useState("")
+  const [customEndDate, setCustomEndDate] = useState("")
 
   return (
     <div className="p-6">
@@ -169,19 +173,43 @@ export function Dashboard() {
       </div>
 
       {/* Filter Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Calendar className="h-4 w-4 text-slate-600" />
-        <label className="text-sm font-medium text-slate-700">Periode:</label>
-        <Select
-          value={filterPeriod}
-          onChange={(e) => setFilterPeriod(e.target.value)}
-          className="w-48"
-        >
-          <option value="Hari Ini">Hari Ini</option>
-          <option value="Minggu Ini">Minggu Ini</option>
-          <option value="Bulan Ini">Bulan Ini</option>
-          <option value="Kustom Tanggal">Kustom Tanggal</option>
-        </Select>
+      <div className="mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <Calendar className="h-4 w-4 text-slate-600" />
+          <label className="text-sm font-medium text-slate-700">Periode:</label>
+          <Select
+            value={filterPeriod}
+            onChange={(e) => setFilterPeriod(e.target.value)}
+            className="w-48"
+          >
+            <option value="Hari Ini">Hari Ini</option>
+            <option value="Minggu Ini">Minggu Ini</option>
+            <option value="Bulan Ini">Bulan Ini</option>
+            <option value="Kustom Tanggal">Kustom Tanggal</option>
+          </Select>
+
+          {/* Custom Date Range - Show only when "Kustom Tanggal" is selected */}
+          {filterPeriod === "Kustom Tanggal" && (
+            <div className="flex items-center gap-2 ml-4">
+              <Input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-40"
+              />
+              <span className="text-slate-500">to</span>
+              <Input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-40"
+              />
+              <Button variant="cyan" className="text-white">
+                Terapkan
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KPI Cards */}
