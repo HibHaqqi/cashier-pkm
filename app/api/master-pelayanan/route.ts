@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, toNumber } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 // GET - Fetch all master pelayanan
 export async function GET(request: NextRequest) {
@@ -52,6 +53,15 @@ export async function GET(request: NextRequest) {
 // POST - Create new master pelayanan
 export async function POST(request: NextRequest) {
   try {
+    // Get user from token
+    const token = request.cookies.get('auth-token')?.value
+    let userId: string | undefined
+
+    if (token) {
+      const payload = await verifyToken(token)
+      userId = payload?.userId as string
+    }
+
     const body = await request.json()
     const { kategori, jenisPelayanan, tarif, satuan } = body
 
@@ -68,6 +78,7 @@ export async function POST(request: NextRequest) {
         jenisPelayanan,
         tarif: parseFloat(tarif),
         satuan: satuan || null,
+        createdById: userId,
       },
     })
 

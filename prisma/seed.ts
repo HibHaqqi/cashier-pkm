@@ -1,9 +1,27 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('Starting seed...')
+
+  // Create default admin user
+  const hashedPassword = await bcrypt.hash('admin123', 10)
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@puskesmas.id' },
+    update: {},
+    create: {
+      name: 'Admin Puskesmas',
+      email: 'admin@puskesmas.id',
+      password: hashedPassword,
+      role: 'admin',
+    },
+  })
+
+  console.log('Default admin user created:', adminUser.email)
+  console.log('Default password: admin123')
 
   // Master Pelayanan Data
   const masterPelayananData = [

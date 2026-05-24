@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, LayoutDashboard, Database, Wallet, User } from "lucide-react"
+import { ChevronDown, LayoutDashboard, Database, Wallet, User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/hooks"
 
 interface MenuItem {
   label: string
@@ -37,7 +38,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onNavigate, currentView }: SidebarProps) {
+  const { user, logout } = useAuth()
   const [openDropdown, setOpenDropdown] = useState<string | null>("Keuangan")
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   const toggleDropdown = (label: string) => {
     setOpenDropdown(openDropdown === label ? null : label)
@@ -50,7 +53,7 @@ export function Sidebar({ onNavigate, currentView }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 bg-white">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 bg-white flex flex-col">
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-slate-200 px-6">
         <div className="flex items-center gap-2">
@@ -59,7 +62,42 @@ export function Sidebar({ onNavigate, currentView }: SidebarProps) {
           </div>
           <span className="font-semibold text-slate-800">Puskesmas</span>
         </div>
-        <User className="h-5 w-5 text-slate-600" />
+        <div className="relative">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <User className="h-4 w-4 text-blue-600" />
+            </div>
+          </button>
+
+          {/* User Dropdown */}
+          {showUserMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowUserMenu(false)}
+              />
+              <div className="absolute right-0 top-10 z-20 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-2">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-sm font-medium text-slate-800">{user?.name || 'User'}</p>
+                  <p className="text-xs text-slate-500">{user?.email || ''}</p>
+                  <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                    {user?.role || 'staff'}
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
@@ -126,6 +164,13 @@ export function Sidebar({ onNavigate, currentView }: SidebarProps) {
           )}
         </ul>
       </nav>
+
+      {/* Footer */}
+      <div className="mt-auto p-4 border-t border-slate-200">
+        <p className="text-xs text-slate-500 text-center">
+          © 2025 Puskesmas
+        </p>
+      </div>
     </aside>
   )
 }

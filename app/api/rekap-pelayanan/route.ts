@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, toNumber } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 // Helper to generate sequential invoice number
 async function generateNoKwitansi(): Promise<string> {
@@ -27,6 +28,15 @@ async function generateNoKwitansi(): Promise<string> {
 // POST - Create Transaction Invoice
 export async function POST(request: NextRequest) {
   try {
+    // Get user from token
+    const token = request.cookies.get('auth-token')?.value
+    let userId: string | undefined
+
+    if (token) {
+      const payload = await verifyToken(token)
+      userId = payload?.userId as string
+    }
+
     const body = await request.json()
     const {
       tanggal,
@@ -79,6 +89,7 @@ export async function POST(request: NextRequest) {
           sumberPendanaan,
           metodePembayaran,
           totalTarifKeseluruhan,
+          createdById: userId,
         },
       })
 
