@@ -11,6 +11,6 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // Helper function to convert Decimal to number for frontend compatibility
-export function toNumber(value: { toNumber: () => number }): number {
+export function toNumber(value: { toNumber: () => number } | null | undefined): number {
   return value?.toNumber() ?? 0
 }

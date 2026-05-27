@@ -5,11 +5,18 @@ import { ChevronDown, LayoutDashboard, Database, Wallet, User, LogOut } from "lu
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks"
 
+type ViewType = "dashboard" | "master-data" | "service-list" | "service-add"
+
+interface SidebarProps {
+  onNavigate?: (view: ViewType) => void
+  currentView?: ViewType
+}
+
 interface MenuItem {
   label: string
   icon: React.ElementType
-  view?: string
-  subItems?: { label: string; view: string }[]
+  view?: ViewType
+  subItems?: { label: string; view: ViewType }[]
 }
 
 const menuItems: MenuItem[] = [
@@ -32,11 +39,6 @@ const menuItems: MenuItem[] = [
   },
 ]
 
-interface SidebarProps {
-  onNavigate?: (view: string) => void
-  currentView?: string
-}
-
 export function Sidebar({ onNavigate, currentView }: SidebarProps) {
   const { user, logout } = useAuth()
   const [openDropdown, setOpenDropdown] = useState<string | null>("Keuangan")
@@ -46,7 +48,7 @@ export function Sidebar({ onNavigate, currentView }: SidebarProps) {
     setOpenDropdown(openDropdown === label ? null : label)
   }
 
-  const handleNavClick = (view: string) => {
+  const handleNavClick = (view: ViewType) => {
     if (onNavigate) {
       onNavigate(view)
     }

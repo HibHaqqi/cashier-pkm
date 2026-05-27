@@ -1,0 +1,26 @@
+services:
+  cashier-pkm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cashier-pkm
+    restart: unless-stopped
+    ports:
+      - "3155:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://koscek_user:koscek_password@koscek-postgres:5432/cashier_pkm?schema=public
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+    networks:
+      - koscek_koscek-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  koscek_koscek-network:
+    external: true
+    name: koscek_koscek-network

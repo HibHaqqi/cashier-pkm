@@ -14,6 +14,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [mode, setMode] = useState<AuthMode>("login")
   const [formData, setFormData] = useState({
+    puskesmasId: "",
     name: "",
     email: "",
     password: "",
@@ -28,7 +29,7 @@ export default function LoginPage() {
 
     // Validation
     if (mode === "register") {
-      if (!formData.name || !formData.email || !formData.password) {
+      if (!formData.puskesmasId || !formData.name || !formData.email || !formData.password) {
         setError("Semua field harus diisi")
         return
       }
@@ -53,7 +54,7 @@ export default function LoginPage() {
       const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register"
       const payload = mode === "login"
         ? { email: formData.email, password: formData.password }
-        : { name: formData.name, email: formData.email, password: formData.password }
+        : { puskesmasId: formData.puskesmasId, name: formData.name, email: formData.email, password: formData.password }
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -97,21 +98,42 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "register" && (
-              <div>
-                <Label htmlFor="name">Nama Lengkap</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Masukkan nama lengkap"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="pl-9"
-                    required
-                  />
+              <>
+                <div>
+                  <Label htmlFor="puskesmasId">ID Puskesmas</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="puskesmasId"
+                      type="text"
+                      placeholder="Contoh: PUSKESMAS-001"
+                      value={formData.puskesmasId}
+                      onChange={(e) => setFormData({ ...formData, puskesmasId: e.target.value.toUpperCase() })}
+                      className="pl-9 uppercase"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Masukkan ID Puskesmas Anda (dapat dilihat dari admin)
+                  </p>
                 </div>
-              </div>
+
+                <div>
+                  <Label htmlFor="name">Nama Lengkap</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Masukkan nama lengkap"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="pl-9"
+                      required
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
             <div>

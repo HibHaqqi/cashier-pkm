@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email,
       role: user.role,
+      puskesmasId: user.puskesmasId,
     })
 
     // Create response
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
+        puskesmasId: user.puskesmasId,
       },
     })
 

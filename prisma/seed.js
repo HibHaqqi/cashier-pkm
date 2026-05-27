@@ -1,13 +1,15 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+const { PrismaClient } = require('@prisma/client')
+const bcrypt = require('bcryptjs')
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('Starting seed...')
 
+  // Default Puskesmas ID
   const defaultPuskesmasId = 'PUSKESMAS-001'
 
+  // Create default admin user
   const hashedPassword = await bcrypt.hash('admin123', 10)
 
   const adminUser = await prisma.user.upsert({
@@ -26,6 +28,7 @@ async function main() {
   console.log('Default puskesmasId:', defaultPuskesmasId)
   console.log('Default password: admin123')
 
+  // Master Pelayanan Data
   const masterPelayananData = [
     { puskesmasId: defaultPuskesmasId, kategori: 'Pelayanan Rawat Jalan', jenisPelayanan: 'Pemeriksaan Umum / Rawat Jalan', tarif: 10000 },
     { puskesmasId: defaultPuskesmasId, kategori: 'Pelayanan Rawat Jalan', jenisPelayanan: 'Pemeriksaan Kesehatan untuk Penerbitan Surat Keterangan Sehat', tarif: 15000 },
@@ -45,6 +48,7 @@ async function main() {
     { puskesmasId: defaultPuskesmasId, kategori: 'Ambulans', jenisPelayanan: 'Tarif Tambahan Ambulans per Kilometer berikutnya', tarif: 7500, satuan: 'Km' },
   ]
 
+  // Insert Master Pelayanan
   for (const item of masterPelayananData) {
     await prisma.masterPelayanan.create({
       data: item,
@@ -52,6 +56,61 @@ async function main() {
   }
 
   console.log('Master Pelayanan seeded successfully')
+
+  // Get some services for sample data
+  const umumService = await prisma.masterPelayanan.findFirst({
+    where: { jenisPelayanan: 'Pemeriksaan Umum / Rawat Jalan' }
+  })
+  const hbService = await prisma.masterPelayanan.findFirst({
+    where: { jenisPelayanan: 'Pemeriksaan Hemoglobin (Hb) Stik' }
+  })
+  const gulaService = await prisma.masterPelayanan.findFirst({
+    where: { jenisPelayanan: 'Pemeriksaan Gula Darah Stik' }
+  })
+
+  // Sample Rekap Pelayanan Data
+  const sampleRekap = await prisma.rekapPelayanan.create({
+    data: {
+      puskesmasId: defaultPuskesmasId,
+      noKwitansi: 'KW-2025050001',
+      tanggal: new Date(),
+      nama: 'Ahmad Sudrajat',
+      alamat: 'Jl. Merdeka No. 123, Jakarta Selatan',
+      jenisKelamin: 'L',
+      usia: 35,
+      nomorRm: 'RM-001234',
+      sumberPendanaan: 'BPJS',
+      metodePembayaran: 'Transfer',
+      totalTarifKeseluruhan: 35000,
+      detailPelayanan: {
+        create: [
+          {
+            masterPelayananId: umumService.id,
+            jenisPelayananSnapshot: 'Pemeriksaan Umum / Rawat Jalan',
+            tarifDasar: 10000,
+            qtyKilometer: 1,
+            subtotal: 10000,
+          },
+          {
+            masterPelayananId: hbService.id,
+            jenisPelayananSnapshot: 'Pemeriksaan Hemoglobin (Hb) Stik',
+            tarifDasar: 15000,
+            qtyKilometer: 1,
+            subtotal: 15000,
+          },
+          {
+            masterPelayananId: gulaService.id,
+            jenisPelayananSnapshot: 'Pemeriksaan Gula Darah Stik',
+            tarifDasar: 10000,
+            qtyKilometer: 1,
+            subtotal: 10000,
+          },
+        ],
+      },
+    },
+  })
+
+  console.log('Sample Rekap Pelayanan created')
   console.log('Seed completed successfully!')
 }
 

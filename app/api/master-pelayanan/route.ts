@@ -5,11 +5,30 @@ import { verifyToken } from '@/lib/auth'
 // GET - Fetch all master pelayanan
 export async function GET(request: NextRequest) {
   try {
+    // Get user from token
+    const token = request.cookies.get('auth-token')?.value
+    let puskesmasId: string | undefined
+
+    if (token) {
+      const payload = await verifyToken(token)
+      puskesmasId = payload?.puskesmasId as string
+    }
+
+    if (!puskesmasId) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const kategori = searchParams.get('kategori')
     const search = searchParams.get('search')
 
-    const where: any = {}
+    // Build where clause - always filter by puskesmasId
+    const where: any = {
+      puskesmasId,
+    }
 
     if (kategori && kategori !== 'Semua') {
       where.kategori = kategori
@@ -56,10 +75,19 @@ export async function POST(request: NextRequest) {
     // Get user from token
     const token = request.cookies.get('auth-token')?.value
     let userId: string | undefined
+    let puskesmasId: string | undefined
 
     if (token) {
       const payload = await verifyToken(token)
       userId = payload?.userId as string
+      puskesmasId = payload?.puskesmasId as string
+    }
+
+    if (!puskesmasId) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
     }
 
     const body = await request.json()
@@ -74,6 +102,7 @@ export async function POST(request: NextRequest) {
 
     const newRecord = await prisma.masterPelayanan.create({
       data: {
+        puskesmasId,
         kategori,
         jenisPelayanan,
         tarif: parseFloat(tarif),

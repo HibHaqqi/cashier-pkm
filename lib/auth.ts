@@ -13,7 +13,7 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword)
 }
 
-export async function createToken(payload: { userId: string; email: string; role: string }): Promise<string> {
+export async function createToken(payload: { userId: string; email: string; role: string; puskesmasId: string }): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -35,4 +35,5 @@ export interface SessionUser {
   email: string
   name: string
   role: string
+  puskesmasId: string
 }

@@ -1,48 +1,50 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("staff") // staff, admin
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     String            @id @default(uuid())
+  puskesmasId            String
+  name                   String
+  email                  String            @unique
+  password               String
+  role                   String            @default("staff")
+  isActive               Boolean           @default(true)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  createdMasterPelayanan MasterPelayanan[] @relation("CreatedByMaster")
+  createdRekapPelayanan  RekapPelayanan[]  @relation("CreatedByRekap")
 
-  // Relations
-  createdMasterPelayanan  MasterPelayanan[]  @relation("CreatedByMaster")
-  createdRekapPelayanan  RekapPelayanan[]   @relation("CreatedByRekap")
-
+  @@index([puskesmasId])
   @@map("users")
 }
 
 model MasterPelayanan {
-  id               String            @id @default(uuid())
-  kategori         String
-  jenisPelayanan   String
-  tarif            Decimal           @db.Decimal(12, 2)
-  satuan           String?
-  createdById      String?
-  createdBy        User?             @relation("CreatedByMaster", fields: [createdById], references: [id])
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  detailPelayanan  DetailPelayanan[]
+  id              String            @id @default(uuid())
+  puskesmasId     String
+  kategori        String
+  jenisPelayanan  String
+  tarif           Decimal           @db.Decimal(12, 2)
+  satuan          String?
+  createdById     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  detailPelayanan DetailPelayanan[]
+  createdBy       User?             @relation("CreatedByMaster", fields: [createdById], references: [id])
 
+  @@index([puskesmasId])
   @@map("master_pelayanan")
 }
 
 model RekapPelayanan {
   id                    String            @id @default(uuid())
+  puskesmasId           String
   noKwitansi            String            @unique
   tanggal               DateTime
   nama                  String
@@ -54,26 +56,28 @@ model RekapPelayanan {
   metodePembayaran      String
   totalTarifKeseluruhan Decimal           @db.Decimal(12, 2)
   createdById           String?
-  createdBy             User?             @relation("CreatedByRekap", fields: [createdById], references: [id])
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
   detailPelayanan       DetailPelayanan[]
+  createdBy             User?             @relation("CreatedByRekap", fields: [createdById], references: [id])
 
+  @@unique([puskesmasId, noKwitansi])
+  @@index([puskesmasId])
   @@map("rekap_pelayanan")
 }
 
 model DetailPelayanan {
-  id                      String           @id @default(uuid())
-  rekapPelayananId        String
-  masterPelayananId       String
-  jenisPelayananSnapshot  String
-  tarifDasar              Decimal          @db.Decimal(12, 2)
-  qtyKilometer            Decimal          @db.Decimal(10, 2)
-  subtotal                Decimal          @db.Decimal(12, 2)
-  createdAt               DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
-  rekapPelayanan          RekapPelayanan   @relation(fields: [rekapPelayananId], references: [id], onDelete: Cascade)
-  masterPelayanan         MasterPelayanan  @relation(fields: [masterPelayananId], references: [id])
+  id                     String          @id @default(uuid())
+  rekapPelayananId       String
+  masterPelayananId      String
+  jenisPelayananSnapshot String
+  tarifDasar             Decimal         @db.Decimal(12, 2)
+  qtyKilometer           Decimal         @db.Decimal(10, 2)
+  subtotal               Decimal         @db.Decimal(12, 2)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  masterPelayanan        MasterPelayanan @relation(fields: [masterPelayananId], references: [id])
+  rekapPelayanan         RekapPelayanan  @relation(fields: [rekapPelayananId], references: [id], onDelete: Cascade)
 
   @@map("detail_pelayanan")
 }

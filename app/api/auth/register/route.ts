@@ -5,11 +5,11 @@ import { hashPassword } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password, role = 'staff' } = body
+    const { puskesmasId, name, email, password, role = 'staff' } = body
 
-    if (!name || !email || !password) {
+    if (!puskesmasId || !name || !email || !password) {
       return NextResponse.json(
-        { error: 'Name, email, and password are required' },
+        { error: 'Puskesmas ID, name, email, and password are required' },
         { status: 400 }
       )
     }
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     // Create user
     const user = await prisma.user.create({
       data: {
+        puskesmasId,
         name,
         email,
         password: hashedPassword,
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
         message: 'User registered successfully',
         user: {
           id: user.id,
+          puskesmasId: user.puskesmasId,
           name: user.name,
           email: user.email,
           role: user.role,

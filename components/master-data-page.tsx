@@ -1,23 +1,27 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Plus, Pencil, Trash2, Filter } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Plus, Pencil, Trash2, Filter, Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { MASTER_PELAYANAN_SAMPLE, KATEGORIES, formatCurrency, ServiceMasterItem } from "@/lib/master-data"
+import { formatCurrency, ServiceMasterItem } from "@/lib/master-data"
 
 export function MasterDataPage() {
-  const [services, setServices] = useState<ServiceMasterItem[]>(MASTER_PELAYANAN_SAMPLE)
+  const [services, setServices] = useState<ServiceMasterItem[]>([])
+  const [categories, setCategories] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("Semua")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingService, setEditingService] = useState<ServiceMasterItem | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<ServiceMasterItem | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Form state for add/edit
   const [formData, setFormData] = useState({
@@ -26,6 +30,33 @@ export function MasterDataPage() {
     tarif: "",
     satuan: ""
   })
+
+  // Fetch master pelayanan data
+  const fetchData = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch("/api/master-pelayanan")
+      if (!response.ok) throw new Error("Failed to fetch data")
+
+      const result = await response.json()
+      setServices(result.data || [])
+
+      // Extract unique categories
+      const cats = Array.from(new Set((result.data || []).map((s: ServiceMasterItem) => s.kategori))) as string[]
+      setCategories(cats)
+    } catch (err) {
+      console.error("Error fetching data:", err)
+      setError("Failed to load master pelayanan")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   // Filter services
   const filteredServices = services.filter(service => {
@@ -64,45 +95,98 @@ export function MasterDataPage() {
   }
 
   // Handle add service
-  const handleAddService = () => {
-    const newService: ServiceMasterItem = {
-      id: `SRV-${String(services.length + 1).padStart(3, '0')}`,
-      kategori: formData.kategori,
-      jenis_pelayanan: formData.jenis_pelayanan,
-      tarif: parseInt(formData.tarif) || 0,
-      satuan: formData.satuan || undefined
+  const handleAddService = async () => {
+    setSaving(true)
+    setError(null)
+
+    try {
+      const payload = {
+        kategori: formData.kategori,
+        jenisPelayanan: formData.jenis_pelayanan,
+        tarif: parseFloat(formData.tarif) || 0,
+        satuan: formData.satuan || null
+      }
+
+      const response = await fetch("/api/master-pelayanan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to add service")
+      }
+
+      await fetchData()
+      setIsAddModalOpen(false)
+      resetForm()
+    } catch (err) {
+      console.error("Error adding service:", err)
+      setError(err instanceof Error ? err.message : "Failed to add service")
+    } finally {
+      setSaving(false)
     }
-    setServices([...services, newService])
-    setIsAddModalOpen(false)
-    resetForm()
   }
 
   // Handle edit service
-  const handleEditService = () => {
-    if (editingService) {
-      const updatedServices = services.map(s =>
-        s.id === editingService.id
-          ? {
-              ...s,
-              kategori: formData.kategori,
-              jenis_pelayanan: formData.jenis_pelayanan,
-              tarif: parseInt(formData.tarif) || 0,
-              satuan: formData.satuan || undefined
-            }
-          : s
-      )
-      setServices(updatedServices)
+  const handleEditService = async () => {
+    if (!editingService) return
+
+    setSaving(true)
+    setError(null)
+
+    try {
+      const payload = {
+        id: editingService.id,
+        kategori: formData.kategori,
+        jenisPelayanan: formData.jenis_pelayanan,
+        tarif: parseFloat(formData.tarif) || 0,
+        satuan: formData.satuan || null
+      }
+
+      const response = await fetch("/api/master-pelayanan", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to update service")
+      }
+
+      await fetchData()
       setIsEditModalOpen(false)
       setEditingService(null)
       resetForm()
+    } catch (err) {
+      console.error("Error updating service:", err)
+      setError(err instanceof Error ? err.message : "Failed to update service")
+    } finally {
+      setSaving(false)
     }
   }
 
   // Handle delete service
-  const handleDeleteService = () => {
-    if (deleteConfirm) {
-      setServices(services.filter(s => s.id !== deleteConfirm.id))
+  const handleDeleteService = async () => {
+    if (!deleteConfirm) return
+
+    try {
+      const response = await fetch(`/api/master-pelayanan?id=${deleteConfirm.id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to delete service")
+      }
+
+      await fetchData()
       setDeleteConfirm(null)
+    } catch (err) {
+      console.error("Error deleting service:", err)
+      alert("Failed to delete service")
     }
   }
 
@@ -138,13 +222,16 @@ export function MasterDataPage() {
               className="w-48"
             >
               <option value="Semua">Semua Kategori</option>
-              {KATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </Select>
           </div>
 
           {/* Add Button */}
+          <Button onClick={() => fetchData()} variant="outline" size="icon">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
           <Button onClick={openAddModal}>
             <Plus className="h-4 w-4 mr-2" />
             Tambah Pelayanan
@@ -152,65 +239,80 @@ export function MasterDataPage() {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-24">Kode</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Jenis Pelayanan</TableHead>
-              <TableHead className="w-32">Tarif</TableHead>
-              <TableHead className="w-24">Satuan</TableHead>
-              <TableHead className="w-32 text-center">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredServices.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-slate-500 py-8">
-                  Tidak ada data ditemukan
-                </TableCell>
+                <TableHead className="w-32">ID</TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead>Jenis Pelayanan</TableHead>
+                <TableHead className="w-32">Tarif</TableHead>
+                <TableHead className="w-24">Satuan</TableHead>
+                <TableHead className="w-32 text-center">Aksi</TableHead>
               </TableRow>
-            ) : (
-              filteredServices.map((service) => (
-                <TableRow key={service.id}>
-                  <TableCell className="font-mono text-sm">{service.id}</TableCell>
-                  <TableCell>
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                      {service.kategori}
-                    </span>
-                  </TableCell>
-                  <TableCell>{service.jenis_pelayanan}</TableCell>
-                  <TableCell className="font-semibold text-slate-700">
-                    {formatCurrency(service.tarif)}
-                  </TableCell>
-                  <TableCell className="text-slate-600">
-                    {service.satuan || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => openEditModal(service)}
-                        className="p-2 hover:bg-blue-50 rounded text-blue-600 transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(service)}
-                        className="p-2 hover:bg-red-50 rounded text-red-600 transition-colors"
-                        title="Hapus"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {filteredServices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                    Tidak ada data ditemukan
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filteredServices.map((service) => (
+                  <TableRow key={service.id}>
+                    <TableCell className="font-mono text-xs">
+                      {service.id.slice(0, 8)}...
+                    </TableCell>
+                    <TableCell>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                        {service.kategori}
+                      </span>
+                    </TableCell>
+                    <TableCell>{service.jenis_pelayanan}</TableCell>
+                    <TableCell className="font-semibold text-slate-700">
+                      {formatCurrency(service.tarif)}
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {service.satuan || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => openEditModal(service)}
+                          className="p-2 hover:bg-blue-50 rounded text-blue-600 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(service)}
+                          className="p-2 hover:bg-red-50 rounded text-red-600 transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Summary */}
@@ -226,6 +328,11 @@ export function MasterDataPage() {
             <DialogClose onClick={() => setIsAddModalOpen(false)} />
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                {error}
+              </div>
+            )}
             <div>
               <Label htmlFor="kategori">Kategori</Label>
               <Select
@@ -235,7 +342,7 @@ export function MasterDataPage() {
                 className="mt-2"
               >
                 <option value="">Pilih Kategori</option>
-                {KATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
                 <option value="Custom">Custom Baru</option>
@@ -297,10 +404,10 @@ export function MasterDataPage() {
             </Button>
             <Button
               onClick={handleAddService}
-              disabled={!formData.kategori || !formData.jenis_pelayanan || !formData.tarif}
+              disabled={saving || !formData.kategori || !formData.jenis_pelayanan || !formData.tarif}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              {saving ? "Menyimpan..." : "Tambah"}
             </Button>
           </div>
         </DialogContent>
@@ -310,10 +417,15 @@ export function MasterDataPage() {
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Pelayanan - {editingService?.id}</DialogTitle>
+            <DialogTitle>Edit Pelayanan</DialogTitle>
             <DialogClose onClick={() => setIsEditModalOpen(false)} />
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                {error}
+              </div>
+            )}
             <div>
               <Label htmlFor="editKategori">Kategori</Label>
               <Select
@@ -322,7 +434,7 @@ export function MasterDataPage() {
                 onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
                 className="mt-2"
               >
-                {KATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
                 <option value="Custom">Custom Baru</option>
@@ -366,9 +478,9 @@ export function MasterDataPage() {
             <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
               Batal
             </Button>
-            <Button onClick={handleEditService}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Simpan Perubahan
+            <Button onClick={handleEditService} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Pencil className="h-4 w-4 mr-2" />}
+              {saving ? "Menyimpan..." : "Simpan"}
             </Button>
           </div>
         </DialogContent>

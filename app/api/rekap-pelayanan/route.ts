@@ -31,10 +31,19 @@ export async function POST(request: NextRequest) {
     // Get user from token
     const token = request.cookies.get('auth-token')?.value
     let userId: string | undefined
+    let puskesmasId: string | undefined
 
     if (token) {
       const payload = await verifyToken(token)
       userId = payload?.userId as string
+      puskesmasId = payload?.puskesmasId as string
+    }
+
+    if (!puskesmasId) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
     }
 
     const body = await request.json()
@@ -80,11 +89,12 @@ export async function POST(request: NextRequest) {
       const rekap = await tx.rekapPelayanan.create({
         data: {
           noKwitansi,
+          puskesmasId,
           tanggal: new Date(tanggal),
           nama,
           alamat,
           jenisKelamin,
-          usia: usia ? parseInt(usia) : null,
+          usia: parseInt(usia || '0'),
           nomorRm,
           sumberPendanaan,
           metodePembayaran,
@@ -135,13 +145,31 @@ export async function POST(request: NextRequest) {
 // GET - Fetch Data Rows with filters
 export async function GET(request: NextRequest) {
   try {
+    // Get user from token
+    const token = request.cookies.get('auth-token')?.value
+    let puskesmasId: string | undefined
+
+    if (token) {
+      const payload = await verifyToken(token)
+      puskesmasId = payload?.puskesmasId as string
+    }
+
+    if (!puskesmasId) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
     const search = searchParams.get('search')
 
-    // Build where clause
-    const where: any = {}
+    // Build where clause - always filter by puskesmasId
+    const where: any = {
+      puskesmasId,
+    }
 
     if (startDate || endDate) {
       where.tanggal = {}
@@ -189,9 +217,9 @@ export async function GET(request: NextRequest) {
       sumberPendanaan: record.sumberPendanaan,
       metodePembayaran: record.metodePembayaran,
       totalTarifKeseluruhan: toNumber(record.totalTarifKeseluruhan),
-      layananItems: record.detailPelayanan.map((detail) => ({
+      detailPelayanan: record.detailPelayanan.map((detail) => ({
         id: detail.id,
-        jenisPelayanan: detail.jenisPelayananSnapshot,
+        jenisPelayananSnapshot: detail.jenisPelayananSnapshot,
         tarifDasar: toNumber(detail.tarifDasar),
         qtyKilometer: toNumber(detail.qtyKilometer),
         subtotal: toNumber(detail.subtotal),

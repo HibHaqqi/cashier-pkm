@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, toNumber } from '@/lib/prisma'
+import { verifyToken } from '@/lib/auth'
 
 // GET - Dashboard Analytics Pipeline
 export async function GET(request: NextRequest) {
   try {
+    // Get user from token
+    const token = request.cookies.get('auth-token')?.value
+    let puskesmasId: string | undefined
+
+    if (token) {
+      const payload = await verifyToken(token)
+      puskesmasId = payload?.puskesmasId as string
+    }
+
+    if (!puskesmasId) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || 'Bulan Ini'
     const startDate = searchParams.get('startDate')
@@ -52,6 +69,7 @@ export async function GET(request: NextRequest) {
     // Total Pendapatan (sum)
     const revenueResult = await prisma.rekapPelayanan.aggregate({
       where: {
+        puskesmasId,
         tanggal: dateFilter,
       },
       _sum: {
@@ -59,11 +77,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const totalPendapatan = toNumber(revenueResult._sum.totalTarifKeseluruhan || 0)
+    const totalPendapatan = toNumber(revenueResult._sum.totalTarifKeseluruhan)
 
     // Total Kunjungan Pasien (count)
     const totalKunjungan = await prisma.rekapPelayanan.count({
       where: {
+        puskesmasId,
         tanggal: dateFilter,
       },
     })
@@ -73,6 +92,7 @@ export async function GET(request: NextRequest) {
       by: ['jenisPelayananSnapshot'],
       where: {
         rekapPelayanan: {
+          puskesmasId,
           tanggal: dateFilter,
         },
       },
@@ -94,7 +114,7 @@ export async function GET(request: NextRequest) {
       ? {
           nama: serviceUsage[0].jenisPelayananSnapshot,
           count: serviceUsage[0]._count.id,
-          total: toNumber(serviceUsage[0]._sum.subtotal || 0),
+          total: toNumber(serviceUsage[0]._sum.subtotal),
         }
       : null
 
@@ -103,9 +123,10 @@ export async function GET(request: NextRequest) {
       SELECT
         DATE(r.tanggal) as date,
         TO_CHAR(r.tanggal, 'DD Mon') as label,
-        COALESCE(SUM(r.total_tarif_keseluruhan), 0) as revenue
+        COALESCE(SUM(r."totalTarifKeseluruhan"), 0) as revenue
       FROM rekap_pelayanan r
-      WHERE r.tanggal::date >= ${dateFilter.gte}::date
+      WHERE r."puskesmasId" = ${puskesmasId}
+        AND r.tanggal::date >= ${dateFilter.gte}::date
         AND r.tanggal::date <= ${dateFilter.lte}::date
       GROUP BY DATE(r.tanggal), TO_CHAR(r.tanggal, 'DD Mon')
       ORDER BY DATE(r.tanggal)
@@ -121,6 +142,7 @@ export async function GET(request: NextRequest) {
       by: ['jenisPelayananSnapshot'],
       where: {
         rekapPelayanan: {
+          puskesmasId,
           tanggal: dateFilter,
         },
       },
@@ -147,6 +169,7 @@ export async function GET(request: NextRequest) {
 
     const previousRevenue = await prisma.rekapPelayanan.aggregate({
       where: {
+        puskesmasId,
         tanggal: {
           gte: previousMonthStart,
           lte: previousMonthEnd,
@@ -157,7 +180,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const previousPendapatan = toNumber(previousRevenue._sum.totalTarifKeseluruhan || 0)
+    const previousPendapatan = toNumber(previousRevenue._sum.totalTarifKeseluruhan)
 
     // Calculate trend percentage
     let revenueTrend = 0
@@ -167,6 +190,7 @@ export async function GET(request: NextRequest) {
 
     const previousKunjungan = await prisma.rekapPelayanan.count({
       where: {
+        puskesmasId,
         tanggal: {
           gte: previousMonthStart,
           lte: previousMonthEnd,
